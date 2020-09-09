@@ -54,18 +54,30 @@ Once poetry is installed please use the following to install all dependencies an
 
 ### Testing the install by emulating on a file
 
-If this software is correctly installed, it should be able to run the FileOpticalGater using the example data in this repository, from within the repository folder run: `poetry run python open_optical_gating/cli/file_optical_gater.py examples/example_data_settings.json`.
+If this software is correctly installed, it should be able to run the FileOpticalGater using the example data in this repository.
+From within the repository folder run: `poetry run python open_optical_gating/cli/file_optical_gater.py examples/example_data_settings.json`.
 This should ask you to pick a period frame (try '10') and produce four output plots showing the triggers that would be sent, the predicted trigger time as the emulation went on, the accuracy of those emulated triggers and the frame processing rates.
 
 ### Testing the websocket interface
 
-To test the websocket version of this software, from within the repository folder run two separate commands simultaneously:
+To test the websocket-specific features of this software, from within the repository folder run two separate commands simultaneously (i.e. run each in an independent terminal):
 
 `poetry run python open_optical_gating/cli/websocket_optical_gater.py examples/example_data_settings.json`
 
 `poetry run python open_optical_gating/cli/websocket_example_client.py file examples/example_data_settings.json`
 
 This will perform a run similar to that with file_optical_gater, but with frames being sent from the client, synchronization analysis being performed on the server, and triggers being received back by the client (which plots a crude graph at the end).
+
+### Testing the Raspberry Pi (AsclePIus) without a fish
+
+To test the Raspberry Pi-specific features of this software, AsclePIus, it is usually necessary to have a live fish set-up in the microscope.
+However, to enable some testing prior to preparing a fish for imaging, it is possible to give AsclePIus a pre-recorded period (such as the one provided in this repository).
+AclePIus will then use the live camera feed (of whatever is in your scene) and compare this to the pre-recorded period.
+Triggers will of course fail or appear random but this test provides the user with confidence that the picamera and fastpins modules, which can only be tested on a real Raspberry Pi.
+
+From within the repository folder run: `poetry run python open_optical_gating/cli/pi_optical_gater.py examples/default_data_settings.json example_period.tif 39.6`.
+
+You can replace `example_period.tif` with any other 3D image with dimensions txy and replace `39.6` with an appropriate value for the reference period.
 
 ### Tests for developers
 

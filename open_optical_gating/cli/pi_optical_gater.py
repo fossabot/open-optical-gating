@@ -8,6 +8,7 @@ import time
 # Module imports
 import numpy as np
 from loguru import logger
+from skimage import io
 
 # Raspberry Pi-specific imports
 # Picamera
@@ -217,15 +218,41 @@ def run(settings):
     analyser.plot_running()
 
 
+def run_with_ref(settings, ref_frames, ref_frame_period):
+    logger.success("Initialising gater...")
+    analyser = PiOpticalGater(
+        settings=settings,
+        ref_frames=ref_frames,
+        ref_frame_period=ref_frame_period,
+        automatic_target_frame=False,
+    )
+
+    logger.success("Running server...")
+    analyser.run_server(force_framerate=True)
+
+    logger.success("Plotting summaries...")
+    analyser.plot_triggers()
+    analyser.plot_prediction()
+    analyser.plot_accuracy()
+    analyser.plot_running()
+
+
 if __name__ == "__main__":
     # Reads data from settings json file
-    if len(sys.argv) > 1:
+    if len(sys.argv) >= 2:
         settings_file = sys.argv[1]
     else:
         settings_file = "settings.json"
-
     with open(settings_file) as data_file:
         settings = json.load(data_file)
 
+    # read ref_frames if provided
+    if len(sys.argv) == 4:
+        ref_frames = io.imread(sys.argv[2])
+        ref_frame_period = sys.argv[3]
+
     # Runs the server
-    run(settings)
+    if len(sys.argv) == 4:
+        run_with_ref(settings, ref_frames, ref_frame_period)
+    else:
+        run(settings)
