@@ -154,7 +154,7 @@ class OpticalGater:
             self.state = "reset"
 
         pixelArray.metadata["optical_gating_state"] = self.state
-        
+
         if self.state == "sync":
             # Using previously-determined reference period, analyse brightfield frames
             # to determine predicted trigger time for prospective optical gating
@@ -182,9 +182,7 @@ class OpticalGater:
 
         # take a note of our processing rate (useful for deciding what framerate to set)
         time_fin = time.time()
-        pixelArray.metadata["processing_rate_fps"] = 1 / (
-                time_fin - time_init
-            )
+        pixelArray.metadata["processing_rate_fps"] = 1 / (time_fin - time_init)
 
     def sync_state(self, pixelArray):
         """ Code to run when in "sync" state
@@ -239,7 +237,7 @@ class OpticalGater:
         # If we have at least one period of phase history, have a go at predicting a future trigger time
         this_predicted_trigger_time_s = None
         sendTriggerNow = 0
-        if (len(self.frame_history) > self.pog_settings["reference_period"]):
+        if len(self.frame_history) > self.pog_settings["reference_period"]:
             logger.debug("Predicting trigger...")
 
             # TODO: JT writes: this seems as good a place as any to highlight the general issue that the code is not doing a great job of precise timing.
@@ -383,7 +381,14 @@ class OpticalGater:
             self.pog_settings = pog.determine_barrier_frames(self.pog_settings)
 
             # Save the period
-            ref.save_period(self.ref_frames, self.settings["period_dir"])
+            ref.save_period(
+                self.ref_frames,
+                metadata={
+                    "period": self.pog_settings["reference_period"],
+                    "drift": self.pog_settings["drift"],
+                },
+                parent_dir=self.settings["period_dir"],
+            )
             logger.success("Period determined.")
 
             if self.automatic_target_frame:
@@ -401,7 +406,6 @@ class OpticalGater:
                 # The user/app will also need to call the adaptive system
                 # see user_select_ref_frame()
                 self.stop = True
-
 
     def adapt_state(self, pixelArray):
         """ Code to run when in "adapt" state.
@@ -456,34 +460,36 @@ class OpticalGater:
             self.state = "sync"
 
     def start_sync_with_ref_frame(self, ref_frame_number):
-        self.pog_settings = parameters.update(self.pog_settings, referenceFrame=ref_frame_number)
+        self.pog_settings = parameters.update(
+            self.pog_settings, referenceFrame=ref_frame_number
+        )
         # add to periods history for adaptive updates
         (
-         self.sequence_history,
-         self.period_history,
-         self.drift_history,
-         self.shift_history,
-         self.global_solution,
-         self.target,
-         ) = oga.process_sequence(
-                                  self.ref_frames,
-                                  self.pog_settings["reference_period"],
-                                  self.pog_settings["drift"],
-                                  max_offset=3,
-                                  ref_seq_id=0,
-                                  ref_seq_phase=ref_frame_number,
-                                  )
-            
+            self.sequence_history,
+            self.period_history,
+            self.drift_history,
+            self.shift_history,
+            self.global_solution,
+            self.target,
+        ) = oga.process_sequence(
+            self.ref_frames,
+            self.pog_settings["reference_period"],
+            self.pog_settings["drift"],
+            max_offset=3,
+            ref_seq_id=0,
+            ref_seq_phase=ref_frame_number,
+        )
+
         # Turn recording back on for rest of run
         self.stop = False
         # Turn automatic target frames on for future adaptive updates
         self.automatic_target_frame = True
         # Switch to "sync" state, in which we send camera triggers
         logger.info(
-                    "Period determined and target frame has been selected by the user/app; switching to prospective optical gating mode."
-                    )
+            "Period determined and target frame has been selected by the user/app; switching to prospective optical gating mode."
+        )
         self.state = "sync"
-    
+
     def user_select_ref_frame(self, ref_frame_number=None):
         """Prompts the user to select the target frame from a one-period set of reference frames"""
         if ref_frame_number is None:
@@ -499,8 +505,8 @@ class OpticalGater:
         if ref_frame_number < 0:
             # User wants to select a new period. Users can use their creative side by selecting any negative number.
             logger.success(
-                           "User has asked for a new period to be determined, resetting before switching to period determination mode."
-                           )
+                "User has asked for a new period to be determined, resetting before switching to period determination mode."
+            )
             self.state = "reset"
         else:
             # Commit to using this reference frame
