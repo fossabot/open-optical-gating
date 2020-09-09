@@ -202,16 +202,33 @@ def calculate_period_length(diffs):
     return diffs.size - interpolatedMatchEntry
 
 
-def save_period(reference_period, parent_dir="~/"):
-    """Function to save a reference period in am ISO format time-stamped folder with a parent_dir.
+def save_period(reference_period, metadata={}, parent_dir="./", as3d=True):
+    """Function to save a reference period in a timestamped folder.
+        The reference period is saved as a 3D tiff (if as3D is True)
+        or as a series of 2D tiffs (otherwise) in a timestamped folder
+        with a matching .txt file containing metdata.
+        Files are saved in an ISO timestamped folder within parent_dir.
+
         Parameters:
             reference_period    ndarray     t by x by y 3d array of reference frames
+            metadata            dict        dictionary of metadata that should be saved in period.txt
             parent_dir          string      parent directory within which to store the period
+            as3d                bool        should data be saved as a 3D tiff or a series of 2D images
     """
+    # make timestamped folder
     dt = datetime.now().strftime("%Y-%m-%dT%H%M%S")
     os.makedirs(os.path.join(parent_dir, dt), exist_ok=True)
 
-    # Saves the period
-    for i, frame in enumerate(reference_period):
-        io.imsave(os.path.join(parent_dir, dt, "{0:03d}.tiff".format(i)), frame)
+    if as3d:
+        # save the period as a 3D tiff
+        io.imsave(os.path.join(parent_dir, dt, f"{dt}.tiff"), reference_period)
+    else:
+        # save as a series of 2D tiff
+        for i, frame in enumerate(reference_period):
+            io.imsave(os.path.join(parent_dir, dt, f"{i:03d}.tiff"), frame)
+
+    # save a period.txt with any passed metadata
+    with open(os.path.join(parent_dir, dt, f"{dt}.txt"), "w+") as f:
+        for key, value in metadata.items():
+            f.write(f"{key}: {value}\n")
 
